@@ -1,14 +1,16 @@
+import { TimeMatrixAnalytics } from '@/components/dashboard/TimeMatrixAnalytics';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BorderRadius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { logOut } from '@/services/auth';
-import React from 'react';
-import { Alert, Linking, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function ExploreScreen() {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'analytics' | 'settings'>('analytics');
   const surfaceColor = useThemeColor({}, 'surface');
   const borderColor = useThemeColor({}, 'border');
   const tintColor = useThemeColor({}, 'tint');
@@ -37,13 +39,13 @@ export default function ExploreScreen() {
   };
 
   const openGitHub = () => {
-    Linking.openURL('https://github.com/your-username/weekmatrix');
+    Linking.openURL('https://github.com/Anshul-Bhardwaj-21/TimeMatrix');
   };
 
   if (!user) {
     return (
       <ThemedView style={styles.container}>
-        <ThemedText>Please sign in to access settings.</ThemedText>
+        <ThemedText>Please sign in to access analytics and settings.</ThemedText>
       </ThemedView>
     );
   }
@@ -51,63 +53,104 @@ export default function ExploreScreen() {
   return (
     <ThemedView style={styles.container}>
       <View style={styles.header}>
-        <ThemedText type="title">Settings</ThemedText>
-      </View>
-
-      <View style={styles.content}>
-        {/* User Info */}
-        <View style={[styles.section, { backgroundColor: surfaceColor }]}>
-          <ThemedText type="subtitle">Account</ThemedText>
-          <View style={styles.infoRow}>
-            <ThemedText type="caption" style={{ color: mutedColor }}>
-              Email
-            </ThemedText>
-            <ThemedText>{user.email}</ThemedText>
-          </View>
-          <View style={styles.infoRow}>
-            <ThemedText type="caption" style={{ color: mutedColor }}>
-              User ID
-            </ThemedText>
-            <ThemedText type="caption" numberOfLines={1}>
-              {user.uid}
-            </ThemedText>
-          </View>
-        </View>
-
-        {/* App Info */}
-        <View style={[styles.section, { backgroundColor: surfaceColor }]}>
-          <ThemedText type="subtitle">About</ThemedText>
-          <View style={styles.infoRow}>
-            <ThemedText type="caption" style={{ color: mutedColor }}>
-              Version
-            </ThemedText>
-            <ThemedText>1.0.0</ThemedText>
-          </View>
-          <TouchableOpacity style={styles.linkButton} onPress={openGitHub}>
-            <ThemedText style={{ color: tintColor }}>View on GitHub</ThemedText>
-          </TouchableOpacity>
-        </View>
-
-        {/* Actions */}
-        <View style={[styles.section, { backgroundColor: surfaceColor }]}>
+        <ThemedText type="title">Analytics & Settings</ThemedText>
+        
+        {/* Tab Navigation */}
+        <View style={styles.tabContainer}>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: errorColor }]}
-            onPress={handleLogout}
+            style={[
+              styles.tab,
+              { 
+                backgroundColor: activeTab === 'analytics' ? tintColor : 'transparent',
+                borderColor: tintColor 
+              }
+            ]}
+            onPress={() => setActiveTab('analytics')}
           >
-            <ThemedText style={[styles.actionButtonText, { color: 'white' }]}>
-              Sign Out
+            <ThemedText style={{ 
+              color: activeTab === 'analytics' ? 'white' : tintColor 
+            }}>
+              📊 Analytics
+            </ThemedText>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              { 
+                backgroundColor: activeTab === 'settings' ? tintColor : 'transparent',
+                borderColor: tintColor 
+              }
+            ]}
+            onPress={() => setActiveTab('settings')}
+          >
+            <ThemedText style={{ 
+              color: activeTab === 'settings' ? 'white' : tintColor 
+            }}>
+              ⚙️ Settings
             </ThemedText>
           </TouchableOpacity>
         </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <ThemedText type="caption" style={{ color: mutedColor, textAlign: 'center' }}>
-            WeekMatrix helps you track your weekly progress across tasks.
-            {'\n'}Built with React Native, Expo, and Firebase.
-          </ThemedText>
-        </View>
       </View>
+
+      {activeTab === 'analytics' ? (
+        <TimeMatrixAnalytics userId={user.uid} />
+      ) : (
+        <ScrollView style={styles.content}>
+          {/* User Info */}
+          <View style={[styles.section, { backgroundColor: surfaceColor }]}>
+            <ThemedText type="subtitle">Account</ThemedText>
+            <View style={styles.infoRow}>
+              <ThemedText type="caption" style={{ color: mutedColor }}>
+                Email
+              </ThemedText>
+              <ThemedText>{user.email}</ThemedText>
+            </View>
+            <View style={styles.infoRow}>
+              <ThemedText type="caption" style={{ color: mutedColor }}>
+                User ID
+              </ThemedText>
+              <ThemedText type="caption" numberOfLines={1}>
+                {user.uid}
+              </ThemedText>
+            </View>
+          </View>
+
+          {/* App Info */}
+          <View style={[styles.section, { backgroundColor: surfaceColor }]}>
+            <ThemedText type="subtitle">About TimeMatrix</ThemedText>
+            <View style={styles.infoRow}>
+              <ThemedText type="caption" style={{ color: mutedColor }}>
+                Version
+              </ThemedText>
+              <ThemedText>1.0.0</ThemedText>
+            </View>
+            <TouchableOpacity style={styles.linkButton} onPress={openGitHub}>
+              <ThemedText style={{ color: tintColor }}>View on GitHub</ThemedText>
+            </TouchableOpacity>
+          </View>
+
+          {/* Actions */}
+          <View style={[styles.section, { backgroundColor: surfaceColor }]}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: errorColor }]}
+              onPress={handleLogout}
+            >
+              <ThemedText style={[styles.actionButtonText, { color: 'white' }]}>
+                Sign Out
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <ThemedText type="caption" style={{ color: mutedColor, textAlign: 'center' }}>
+              TimeMatrix helps you track your progress across different time periods.
+              {'\n'}Built with React Native, Expo, and Firebase.
+            </ThemedText>
+          </View>
+        </ScrollView>
+      )}
     </ThemedView>
   );
 }
@@ -119,6 +162,18 @@ const styles = StyleSheet.create({
   header: {
     padding: Spacing.lg,
     paddingTop: Spacing.xxl,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginTop: Spacing.md,
+    gap: Spacing.sm,
+  },
+  tab: {
+    flex: 1,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
   },
   content: {
     flex: 1,

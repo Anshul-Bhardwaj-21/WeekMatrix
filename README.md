@@ -1,24 +1,90 @@
-# WeekMatrix
+# TimeMatrix
 
-A personal weekly task matrix app that helps you track daily progress across tasks, synced across devices using Firebase.
-
-## Security
-
-✅ **WeekMatrix is NOT affected by recent React security advisories** (CVE-2025-55182, etc.) because we use React Native (client-side only), not React Server Components. See [SECURITY.md](./SECURITY.md) for details.
+A personal time-based task matrix app that helps you track daily, weekly, monthly, and yearly progress across tasks, synced across devices using Firebase.
 
 ## Features
 
-- **Weekly Task Matrix**: Visual grid showing tasks vs. days of the week
+- **Time-Based Task Matrix**: Visual tracking for daily, weekly, monthly, and yearly tasks
 - **Real-time Sync**: Data synced across all your devices via Firebase
-- **Progress Tracking**: Per-task and overall weekly completion percentages
-- **Visual Charts**: Bar chart showing daily progress across all tasks
+- **Progress Tracking**: Per-task and overall completion percentages with streaks
+- **Visual Analytics**: Charts showing daily streaks, weekly consistency, monthly summaries
+- **JSON Import**: Import tasks from JSON files or paste JSON data
+- **Smart Notifications**: Web notifications for task reminders and completion prompts
 - **Cross-platform**: Works on mobile (iOS/Android) and web
 - **Dark Mode**: Automatic dark/light theme support
 - **Offline-first**: Works offline with automatic sync when online
 
-## Screenshots
+## Migration from WeekMatrix
 
-*Add screenshots here after building the app*
+If you're upgrading from the original WeekMatrix app, TimeMatrix includes automatic migration:
+
+1. **Automatic Detection**: The app detects legacy weekly task data
+2. **Migration Prompt**: A "Migrate" button appears in the dashboard header
+3. **Data Conversion**: Legacy weekly matrices are converted to the new time-based format
+4. **Progress Preservation**: All completion history is maintained
+
+### What's New in TimeMatrix
+
+- **Multi-Period Support**: Daily, weekly, monthly, and yearly tasks
+- **Time-Based Execution**: Tasks with start/end times and active status
+- **Smart Notifications**: Web notifications for task reminders
+- **Enhanced Analytics**: Streaks, consistency tracking, and yearly overviews
+- **JSON Import**: Import tasks from JSON files or paste JSON data
+- **Active Task Monitoring**: Real-time tracking of currently active tasks
+
+## Data Structure
+
+TimeMatrix uses an enhanced Firestore structure:
+
+```
+users/{userId}/
+  profile: { email, createdAt }
+  tasks/{taskId}: {
+    title: string
+    description?: string
+    period: 'daily' | 'weekly' | 'monthly' | 'yearly'
+    startTime?: 'HH:MM'
+    endTime?: 'HH:MM'
+    reminderEnabled: boolean
+    createdAt: timestamp
+    updatedAt: timestamp
+  }
+  tasks/{taskId}/progress/{progressId}: {
+    taskId: string
+    date: 'YYYY-MM-DD'
+    state: 'pending' | 'completed' | 'skipped'
+    notes?: string
+    completedAt?: timestamp
+    skippedAt?: timestamp
+  }
+```
+
+## JSON Import Schema
+
+You can import tasks using this JSON format:
+
+```json
+{
+  "tasks": [
+    {
+      "title": "Morning Exercise",
+      "description": "30 minutes of cardio",
+      "period": "daily",
+      "startTime": "07:00",
+      "endTime": "07:30",
+      "reminderEnabled": true
+    },
+    {
+      "title": "Weekly Review",
+      "description": "Review goals and progress",
+      "period": "weekly",
+      "startTime": "09:00",
+      "endTime": "10:00",
+      "reminderEnabled": false
+    }
+  ]
+}
+```
 
 ## Tech Stack
 

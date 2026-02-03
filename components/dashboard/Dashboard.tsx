@@ -2,31 +2,38 @@ import { BorderRadius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { logOut } from '@/services/auth';
-import { Task, TaskMatrix, createTask, deleteTask, getTasks, updateTaskMatrix } from '@/services/tasks';
+import { checkMigrationNeeded, migrateLegacyTasks } from '@/services/migration';
+import { createWeeklyTask, deleteWeeklyTask, getWeeklyTasks, LegacyTask, updateWeeklyTaskMatrix } from '@/services/taskBridge';
+import { TaskMatrix } from '@/services/tasks';
+import { updateTaskProgress } from '@/services/timeMatrix';
+import { TaskState } from '@/types/index';
 import { getCurrentWeekId } from '@/utils/dateUtils';
 import React, { useEffect, useState } from 'react';
 import {
     Alert,
+    Modal,
     RefreshControl,
     ScrollView,
     StyleSheet,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { ThemedText } from '../themed-text';
 import { ThemedView } from '../themed-view';
 import { AddTaskForm } from './AddTaskForm';
+import { EnhancedTaskMatrix } from './EnhancedTaskMatrix';
+import { JSONImport } from './JSONImport';
 import { ProgressChart } from './ProgressChart';
 import { TaskList } from './TaskList';
-import { TaskMatrix as TaskMatrixComponent } from './TaskMatrix';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<LegacyTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showJSONImport, setShowJSONImport] = useState(false);
+  const [migrationNeeded, setMigrationNeeded] = useState(false);
 
-  const backgroundColor = useThemeColor({}, 'background');
   const surfaceColor = useThemeColor({}, 'surface');
   const tintColor = useThemeColor({}, 'tint');
   const mutedColor = useThemeColor({}, 'muted');
@@ -35,7 +42,11 @@ export const Dashboard: React.FC = () => {
     if (!user) return;
     
     try {
-      const userTasks = await getTasks(user.uid);
+      // Check if migration is needed
+      const needsMigration = await checkMigrationNeeded(user.uid);
+      setMigrationNeeded(needsMigration);
+      
+      const userTasks = await getWeeklyTasks(user.uid);
       setTasks(userTasks);
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to load tasks');
@@ -45,6 +56,30 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  const handleMigration = async () => {
+    if (!user) return;
+    
+    Alert.alert(
+      'Migrate Legacy Data',
+      'Would you like to migrate your existing weekly tasks to the new TimeMatrix format?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Migrate',
+          onPress: async () => {
+            try {
+              await migrateLegacyTasks(user.uid);
+              Alert.alert('Success', 'Legacy tasks migrated successfully!');
+              await loadTasks();
+            } catch (error: any) {
+              Alert.alert('Migration Error', error.message || 'Failed to migrate tasks');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   useEffect(() => {
     loadTasks();
   }, [user]);
@@ -52,7 +87,7 @@ export const Dashboard: React.FC = () => {
   const handleAddTask = async (title: string) => {
     if (!user) return;
     
-    await createTask(user.uid, title);
+    await createWeeklyTask(user.uid, title);
     await loadTasks();
   };
 
@@ -60,7 +95,7 @@ export const Dashboard: React.FC = () => {
     if (!user) return;
     
     try {
-      await deleteTask(user.uid, taskId);
+      await deleteWeeklyTask(user.uid, taskId);
       await loadTasks();
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to delete task');
@@ -71,7 +106,7 @@ export const Dashboard: React.FC = () => {
     if (!user) return;
     
     try {
-      await updateTaskMatrix(user.uid, taskId, day, completed);
+      await updateWeeklyTaskMatrix(user.uid, taskId, day, completed);
       // Optimistically update local state
       setTasks(prevTasks =>
         prevTasks.map(task =>
@@ -84,6 +119,18 @@ export const Dashboard: React.FC = () => {
       Alert.alert('Error', error.message || 'Failed to update task');
       // Reload tasks to revert optimistic update
       await loadTasks();
+    }
+  };
+
+  const handleTaskStateChange = async (taskId: string, state: TaskState) => {
+    if (!user) return;
+    
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      await updateTaskProgress(user.uid, taskId, today, state);
+      await loadTasks(); // Refresh to show updated state
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to update task state');
     }
   };
 
@@ -126,17 +173,33 @@ export const Dashboard: React.FC = () => {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: surfaceColor }]}>
         <View>
-          <ThemedText type="title">WeekMatrix</ThemedText>
+          <ThemedText type="title">TimeMatrix</ThemedText>
           <ThemedText type="caption" style={{ color: mutedColor }}>
-            Week {getCurrentWeekId()} • {user?.email}
+            Period {getCurrentWeekId()} • {user?.email}
           </ThemedText>
         </View>
-        <TouchableOpacity
-          style={[styles.logoutButton, { borderColor: tintColor }]}
-          onPress={handleLogout}
-        >
-          <ThemedText style={{ color: tintColor }}>Sign Out</ThemedText>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          {migrationNeeded && (
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: tintColor }]}
+              onPress={handleMigration}
+            >
+              <ThemedText style={{ color: 'white', fontSize: 12 }}>Migrate</ThemedText>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={[styles.actionButton, { borderColor: tintColor }]}
+            onPress={() => setShowJSONImport(true)}
+          >
+            <ThemedText style={{ color: tintColor, fontSize: 12 }}>Import</ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.logoutButton, { borderColor: tintColor }]}
+            onPress={handleLogout}
+          >
+            <ThemedText style={{ color: tintColor }}>Sign Out</ThemedText>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -152,8 +215,13 @@ export const Dashboard: React.FC = () => {
         {/* Progress Chart */}
         <ProgressChart tasks={tasks} />
 
-        {/* Task Matrix */}
-        <TaskMatrixComponent tasks={tasks} onToggleTask={handleToggleTask} />
+        {/* Enhanced Task Matrix */}
+        <EnhancedTaskMatrix 
+          tasks={tasks} 
+          userId={user?.uid || ''}
+          onToggleTask={handleToggleTask}
+          onTaskStateChange={handleTaskStateChange}
+        />
 
         {/* Task List */}
         <TaskList tasks={tasks} onDeleteTask={handleDeleteTask} />
@@ -161,6 +229,20 @@ export const Dashboard: React.FC = () => {
         {/* Bottom Spacing */}
         <View style={{ height: Spacing.xxl }} />
       </ScrollView>
+
+      {/* JSON Import Modal */}
+      <Modal
+        visible={showJSONImport}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowJSONImport(false)}
+      >
+        <JSONImport
+          userId={user?.uid || ''}
+          onImportComplete={loadTasks}
+          onClose={() => setShowJSONImport(false)}
+        />
+      </Modal>
     </ThemedView>
   );
 };
@@ -188,6 +270,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  actionButton: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderWidth: 1,
+    borderRadius: BorderRadius.sm,
+    minWidth: 60,
+    alignItems: 'center',
   },
   logoutButton: {
     paddingHorizontal: Spacing.md,

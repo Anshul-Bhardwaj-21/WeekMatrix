@@ -54,9 +54,9 @@ export const AuthScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <ThemedText type="title">WeekMatrix</ThemedText>
+            <ThemedText type="title">TimeMatrix</ThemedText>
             <ThemedText type="caption" style={styles.subtitle}>
-              Track your weekly progress
+              Track your progress across time
             </ThemedText>
           </View>
 

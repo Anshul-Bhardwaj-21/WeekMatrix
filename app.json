@@ -1,21 +1,21 @@
 {
   "expo": {
-    "name": "WeekMatrix",
-    "slug": "weekmatrix",
+    "name": "TimeMatrix",
+    "slug": "timematrix",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "weekmatrix",
+    "scheme": "timematrix",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "icon": "./assets/images/icon.png",
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.weekmatrix"
+      "bundleIdentifier": "com.yourcompany.timematrix"
     },
     "android": {
       "icon": "./assets/images/icon.png",
-      "package": "com.yourcompany.weekmatrix",
+      "package": "com.yourcompany.timematrix",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png"
