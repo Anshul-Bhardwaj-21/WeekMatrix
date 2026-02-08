@@ -40,6 +40,14 @@ export interface TaskProgress {
   skippedAt?: any;
 }
 
+// JSON import validation constants
+export const VALID_PERIODS = ['daily', 'weekly', 'monthly', 'yearly'] as const;
+export const VALID_TIME_REGEX = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+export const MIN_TITLE_LENGTH = 1;
+export const MAX_TITLE_LENGTH = 100;
+export const MAX_DESCRIPTION_LENGTH = 1000;
+export const MAX_TASKS_PER_IMPORT = 100;
+
 // JSON import schema
 export interface TaskImportData {
   title: string;
