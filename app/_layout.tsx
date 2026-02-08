@@ -7,38 +7,60 @@ import { useEffect } from 'react';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { TasksProvider } from '@/contexts/TasksContext';
+import { ThemePreferenceProvider, useTheme } from '@/contexts/ThemeContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Safe to ignore if called multiple times during Fast Refresh.
+});
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
+  const [loaded, fontError] = useFonts({
     // SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+    if (fontError) {
+      console.warn("Failed to load fonts", fontError);
     }
-  }, [loaded]);
+  }, [fontError]);
 
-  if (!loaded) {
+  useEffect(() => {
+    if (loaded || fontError) {
+      SplashScreen.hideAsync().catch(() => {
+        // Ignore: the splash may already be hidden depending on platform/state.
+      });
+    }
+  }, [loaded, fontError]);
+
+  if (!loaded && !fontError) {
     return null;
   }
 
   return (
     <ErrorBoundary>
-      <AuthProvider>
+      <ThemePreferenceProvider>
+        <RootLayoutInner />
+      </ThemePreferenceProvider>
+    </ErrorBoundary>
+  );
+}
+
+function RootLayoutInner() {
+  const { colorScheme } = useTheme();
+
+  return (
+    <AuthProvider>
+      <TasksProvider>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="modal" options={{ presentation: "modal" }} />
           </Stack>
           <StatusBar style="auto" />
         </ThemeProvider>
-      </AuthProvider>
-    </ErrorBoundary>
+      </TasksProvider>
+    </AuthProvider>
   );
 }

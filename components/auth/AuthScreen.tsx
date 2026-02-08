@@ -1,4 +1,5 @@
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
+import { useAuth } from '@/contexts/AuthContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { signIn, signUp } from '@/services/auth';
 import React, { useState } from 'react';
@@ -15,16 +16,18 @@ import {
 import { ThemedText } from '../themed-text';
 
 export const AuthScreen: React.FC = () => {
+  const { continueAsGuest } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loadingAction, setLoadingAction] = useState<"auth" | "guest" | null>(null);
 
   const backgroundColor = useThemeColor({}, 'background');
   const surfaceColor = useThemeColor({}, 'surface');
   const borderColor = useThemeColor({}, 'border');
   const tintColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
+  const mutedColor = useThemeColor({}, 'muted');
 
   const handleAuth = async () => {
     if (!email.trim() || !password.trim()) {
@@ -32,7 +35,7 @@ export const AuthScreen: React.FC = () => {
       return;
     }
 
-    setLoading(true);
+    setLoadingAction("auth");
     try {
       if (isLogin) {
         await signIn(email.trim(), password);
@@ -42,9 +45,23 @@ export const AuthScreen: React.FC = () => {
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Authentication failed');
     } finally {
-      setLoading(false);
+      setLoadingAction(null);
     }
   };
+
+  const handleContinueAsGuest = async () => {
+    setLoadingAction("guest");
+    try {
+      await continueAsGuest();
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to continue as guest');
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const loading = loadingAction !== null;
+  const canSubmit = email.trim().length > 0 && password.trim().length > 0;
 
   return (
     <KeyboardAvoidingView
@@ -67,7 +84,7 @@ export const AuthScreen: React.FC = () => {
                 { borderColor, color: textColor, backgroundColor: surfaceColor }
               ]}
               placeholder="Email"
-              placeholderTextColor={useThemeColor({}, 'muted')}
+              placeholderTextColor={mutedColor}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -81,7 +98,7 @@ export const AuthScreen: React.FC = () => {
                 { borderColor, color: textColor, backgroundColor: surfaceColor }
               ]}
               placeholder="Password"
-              placeholderTextColor={useThemeColor({}, 'muted')}
+              placeholderTextColor={mutedColor}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -89,15 +106,19 @@ export const AuthScreen: React.FC = () => {
             />
 
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: tintColor }]}
+              style={[styles.button, { backgroundColor: tintColor, opacity: loading || !canSubmit ? 0.6 : 1 }]}
               onPress={handleAuth}
-              disabled={loading}
+              disabled={loading || !canSubmit}
             >
               <ThemedText
                 style={[styles.buttonText, { color: 'white' }]}
                 type="defaultSemiBold"
               >
-                {loading ? 'Loading...' : isLogin ? 'Sign In' : 'Sign Up'}
+                {loadingAction === "auth"
+                  ? 'Loading...'
+                  : isLogin
+                    ? 'Sign In'
+                    : 'Sign Up'}
               </ThemedText>
             </TouchableOpacity>
 
@@ -109,6 +130,21 @@ export const AuthScreen: React.FC = () => {
                 {isLogin
                   ? "Don't have an account? Sign up"
                   : 'Already have an account? Sign in'}
+              </ThemedText>
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: borderColor, opacity: 0.5 }]} />
+
+            <TouchableOpacity
+              style={[styles.secondaryButton, { borderColor: tintColor }]}
+              onPress={handleContinueAsGuest}
+              disabled={loading}
+            >
+              <ThemedText type="defaultSemiBold" style={{ color: tintColor }}>
+                {loadingAction === "guest" ? "Loading..." : "Continue as Guest"}
+              </ThemedText>
+              <ThemedText type="caption" style={{ color: mutedColor, textAlign: "center" }}>
+                Tasks stay on this device (no cloud sync).
               </ThemedText>
             </TouchableOpacity>
           </View>
@@ -171,5 +207,16 @@ const styles = StyleSheet.create({
   switchButton: {
     alignItems: 'center',
     marginTop: Spacing.lg,
+  },
+  divider: {
+    height: 1,
+    marginVertical: Spacing.lg,
+  },
+  secondaryButton: {
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    padding: Spacing.md,
+    alignItems: 'center',
+    gap: Spacing.xs,
   },
 });

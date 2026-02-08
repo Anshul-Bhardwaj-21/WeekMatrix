@@ -10,6 +10,7 @@ import { auth, db } from '../config/firebase';
 export interface AuthUser {
   uid: string;
   email: string | null;
+  isGuest: boolean;
 }
 
 export const signUp = async (email: string, password: string): Promise<AuthUser> => {
@@ -26,6 +27,7 @@ export const signUp = async (email: string, password: string): Promise<AuthUser>
     return {
       uid: user.uid,
       email: user.email,
+      isGuest: false,
     };
   } catch (error) {
     throw error;
@@ -40,6 +42,7 @@ export const signIn = async (email: string, password: string): Promise<AuthUser>
     return {
       uid: user.uid,
       email: user.email,
+      isGuest: false,
     };
   } catch (error) {
     throw error;

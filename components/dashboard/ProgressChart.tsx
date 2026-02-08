@@ -1,6 +1,6 @@
 import { BorderRadius, Spacing } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { Task } from '@/services/tasks';
+import { Task } from '@/types';
 import { calculateWeeklyProgress, getProgressData } from '@/utils/progressUtils';
 import React from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
@@ -16,6 +16,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ tasks }) => {
   const tintColor = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
   const mutedColor = useThemeColor({}, 'muted');
+  const borderColor = useThemeColor({}, 'border');
 
   const screenWidth = Dimensions.get('window').width;
   const chartWidth = screenWidth - (Spacing.md * 4);
@@ -53,7 +54,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ tasks }) => {
     },
     propsForBackgroundLines: {
       strokeDasharray: '',
-      stroke: useThemeColor({}, 'border'),
+      stroke: borderColor,
       strokeWidth: 1,
     },
   };
@@ -77,6 +78,8 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ tasks }) => {
           data={chartData}
           width={chartWidth}
           height={200}
+          yAxisLabel=""
+          yAxisSuffix="%"
           chartConfig={chartConfig}
           verticalLabelRotation={0}
           showValuesOnTopOfBars

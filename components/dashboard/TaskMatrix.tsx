@@ -1,6 +1,6 @@
 import { BorderRadius, Spacing, Typography } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { Task, TaskMatrix as TaskMatrixType } from '@/services/tasks';
+import { Task, WeekDay } from '@/types';
 import { formatDate, getCurrentWeekDates } from '@/utils/dateUtils';
 import { calculateTaskProgress } from '@/utils/progressUtils';
 import React from 'react';
@@ -14,11 +14,10 @@ import { ThemedText } from '../themed-text';
 
 interface TaskMatrixProps {
   tasks: Task[];
-  onToggleTask: (taskId: string, day: keyof TaskMatrixType, completed: boolean) => void;
+  onToggleTask: (taskId: string, day: WeekDay, completed: boolean) => void;
 }
 
 export const TaskMatrix: React.FC<TaskMatrixProps> = ({ tasks, onToggleTask }) => {
-  const backgroundColor = useThemeColor({}, 'background');
   const surfaceColor = useThemeColor({}, 'surface');
   const borderColor = useThemeColor({}, 'border');
   const tintColor = useThemeColor({}, 'tint');
@@ -26,7 +25,7 @@ export const TaskMatrix: React.FC<TaskMatrixProps> = ({ tasks, onToggleTask }) =
   const mutedColor = useThemeColor({}, 'muted');
 
   const weekDates = getCurrentWeekDates();
-  const dayNames: (keyof TaskMatrixType)[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const dayNames: WeekDay[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   if (tasks.length === 0) {
     return (
@@ -35,7 +34,7 @@ export const TaskMatrix: React.FC<TaskMatrixProps> = ({ tasks, onToggleTask }) =
           No tasks yet
         </ThemedText>
         <ThemedText type="caption" style={{ color: mutedColor, textAlign: 'center' }}>
-          Add your first task to start tracking your weekly progress
+          Add your first task to start tracking your progress
         </ThemedText>
       </View>
     );
@@ -65,43 +64,53 @@ export const TaskMatrix: React.FC<TaskMatrixProps> = ({ tasks, onToggleTask }) =
         </View>
 
         {/* Task Rows */}
-        {tasks.map((task) => (
-          <View key={task.id} style={styles.taskRow}>
-            <View style={[styles.taskNameCell, { borderColor }]}>
-              <ThemedText numberOfLines={2} style={styles.taskTitle}>
-                {task.title}
-              </ThemedText>
-            </View>
-            {dayNames.map((day) => (
-              <TouchableOpacity
-                key={`${task.id}-${day}`}
-                style={[styles.dayCell, { borderColor }]}
-                onPress={() => onToggleTask(task.id, day, !task.matrix[day])}
-              >
-                <View
-                  style={[
-                    styles.checkbox,
-                    {
-                      backgroundColor: task.matrix[day] ? successColor : 'transparent',
-                      borderColor: task.matrix[day] ? successColor : borderColor,
-                    },
-                  ]}
+        {tasks.map((task) => {
+          const isCompleted = task.state === 'completed';
+
+          return (
+            <View key={task.id} style={styles.taskRow}>
+              <View style={[styles.taskNameCell, { borderColor }]}>
+                <ThemedText numberOfLines={2} style={styles.taskTitle}>
+                  {task.title}
+                </ThemedText>
+                {isCompleted && (
+                  <ThemedText type="caption" style={{ color: mutedColor }}>
+                    Completed
+                  </ThemedText>
+                )}
+              </View>
+              {dayNames.map((day) => (
+                <TouchableOpacity
+                  key={`${task.id}-${day}`}
+                  style={[styles.dayCell, { borderColor, opacity: isCompleted ? 0.4 : 1 }]}
+                  onPress={() => onToggleTask(task.id, day, !task.matrix[day])}
+                  disabled={isCompleted}
                 >
-                  {task.matrix[day] && (
-                    <ThemedText style={[styles.checkmark, { color: 'white' }]}>
-                      ✓
-                    </ThemedText>
-                  )}
-                </View>
-              </TouchableOpacity>
-            ))}
-            <View style={[styles.progressCell, { borderColor }]}>
-              <ThemedText type="defaultSemiBold" style={{ color: tintColor }}>
-                {calculateTaskProgress(task.matrix)}%
-              </ThemedText>
+                  <View
+                    style={[
+                      styles.checkbox,
+                      {
+                        backgroundColor: task.matrix[day] ? successColor : 'transparent',
+                        borderColor: task.matrix[day] ? successColor : borderColor,
+                      },
+                    ]}
+                  >
+                    {task.matrix[day] && (
+                      <ThemedText style={[styles.checkmark, { color: 'white' }]}>
+                        ✓
+                      </ThemedText>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+              <View style={[styles.progressCell, { borderColor }]}>
+                <ThemedText type="defaultSemiBold" style={{ color: tintColor }}>
+                  {calculateTaskProgress(task.matrix)}%
+                </ThemedText>
+              </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
       </View>
     </ScrollView>
   );
