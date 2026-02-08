@@ -1,6 +1,6 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 // Firebase configuration
 // You can either use environment variables or replace with your actual Firebase config
@@ -10,7 +10,7 @@ const firebaseConfig = {
   projectId: "", // Project Id
   storageBucket: "", // Storage Bucket
   messagingSenderId: "", // Messaging Sender Id
-  appId: "" // App Id
+  appId: "", // App Id
 };
 
 // Initialize Firebase

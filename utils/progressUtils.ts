@@ -1,4 +1,4 @@
-import { Task, TaskMatrix } from '../services/tasks';
+import { Task, TaskMatrix } from '@/types';
 
 export const calculateTaskProgress = (matrix: TaskMatrix): number => {
   const completed = Object.values(matrix).filter(Boolean).length;

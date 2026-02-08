@@ -1,53 +1,70 @@
-import { BorderRadius, Spacing, Typography } from '@/constants/theme';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { Task } from '@/services/tasks';
-import { calculateTaskProgress } from '@/utils/progressUtils';
-import React from 'react';
+import { BorderRadius, Spacing, Typography } from "@/constants/theme";
+import { useThemeColor } from "@/hooks/use-theme-color";
+import { Task } from "@/types";
+import { calculateTaskProgress } from "@/utils/progressUtils";
+import React from "react";
 import {
-    Alert,
-    FlatList,
-    StyleSheet,
-    TouchableOpacity,
-    View,
-} from 'react-native';
-import { ThemedText } from '../themed-text';
+  Alert,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { ThemedText } from "../themed-text";
 
 interface TaskListProps {
   tasks: Task[];
-  onDeleteTask: (taskId: string) => Promise<void>;
+  onDeleteTask: (taskId: string) => void | Promise<void>;
+  onEditTask: (task: Task) => void;
+  onToggleTaskState: (taskId: string) => void;
 }
 
-export const TaskList: React.FC<TaskListProps> = ({ tasks, onDeleteTask }) => {
-  const surfaceColor = useThemeColor({}, 'surface');
-  const borderColor = useThemeColor({}, 'border');
-  const tintColor = useThemeColor({}, 'tint');
-  const errorColor = useThemeColor({}, 'error');
-  const mutedColor = useThemeColor({}, 'muted');
+export const TaskList: React.FC<TaskListProps> = ({
+  tasks,
+  onDeleteTask,
+  onEditTask,
+  onToggleTaskState,
+}) => {
+  const surfaceColor = useThemeColor({}, "surface");
+  const borderColor = useThemeColor({}, "border");
+  const tintColor = useThemeColor({}, "tint");
+  const errorColor = useThemeColor({}, "error");
+  const mutedColor = useThemeColor({}, "muted");
 
-  const handleDeleteTask = (taskId: string, taskTitle: string) => {
-    Alert.alert(
-      'Delete Task',
-      `Are you sure you want to delete "${taskTitle}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => onDeleteTask(taskId),
-        },
-      ]
-    );
+  const confirmDelete = (task: Task) => {
+    Alert.alert("Delete Task", `Are you sure you want to delete "${task.title}"?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => void onDeleteTask(task.id),
+      },
+    ]);
   };
 
   const renderTask = ({ item: task }: { item: Task }) => {
     const progress = calculateTaskProgress(task.matrix);
-    
+    const isCompleted = task.state === "completed";
+
     return (
-      <View style={[styles.taskItem, { backgroundColor: surfaceColor, borderColor }]}>
+      <View
+        style={[
+          styles.taskItem,
+          {
+            backgroundColor: surfaceColor,
+            borderColor,
+            opacity: isCompleted ? 0.75 : 1,
+          },
+        ]}
+      >
         <View style={styles.taskContent}>
           <ThemedText type="defaultSemiBold" numberOfLines={2}>
             {task.title}
           </ThemedText>
+          <ThemedText type="caption" style={{ color: mutedColor }}>
+            {isCompleted ? "Completed" : "Active"} • {task.timePeriod}
+          </ThemedText>
+
           <View style={styles.progressContainer}>
             <View style={[styles.progressBar, { backgroundColor: borderColor }]}>
               <View
@@ -65,14 +82,44 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onDeleteTask }) => {
             </ThemedText>
           </View>
         </View>
-        <TouchableOpacity
-          style={[styles.deleteButton, { backgroundColor: errorColor }]}
-          onPress={() => handleDeleteTask(task.id, task.title)}
-        >
-          <ThemedText style={[styles.deleteButtonText, { color: 'white' }]}>
-            ×
-          </ThemedText>
-        </TouchableOpacity>
+
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={[styles.smallButton, { borderColor }]}
+            onPress={() => onEditTask(task)}
+          >
+            <ThemedText type="caption" style={{ color: tintColor }}>
+              Edit
+            </ThemedText>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.smallButton,
+              {
+                borderColor: tintColor,
+                backgroundColor: isCompleted ? "transparent" : tintColor,
+              },
+            ]}
+            onPress={() => onToggleTaskState(task.id)}
+          >
+            <ThemedText
+              type="caption"
+              style={{ color: isCompleted ? tintColor : "white" }}
+            >
+              {isCompleted ? "Activate" : "Complete"}
+            </ThemedText>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.deleteButton, { backgroundColor: errorColor }]}
+            onPress={() => confirmDelete(task)}
+          >
+            <ThemedText style={[styles.deleteButtonText, { color: "white" }]}>
+              ×
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -105,8 +152,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   taskItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: Spacing.md,
     marginBottom: Spacing.sm,
     borderRadius: BorderRadius.md,
@@ -115,9 +162,21 @@ const styles = StyleSheet.create({
   taskContent: {
     flex: 1,
   },
+  actions: {
+    alignItems: "flex-end",
+    justifyContent: "center",
+    gap: Spacing.xs,
+    marginLeft: Spacing.sm,
+  },
+  smallButton: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+  },
   progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: Spacing.sm,
   },
   progressBar: {
@@ -125,19 +184,18 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     marginRight: Spacing.sm,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 3,
   },
   deleteButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: Spacing.sm,
+    alignItems: "center",
+    justifyContent: "center",
   },
   deleteButtonText: {
     fontSize: Typography.sizes.lg,
@@ -145,3 +203,4 @@ const styles = StyleSheet.create({
     lineHeight: Typography.sizes.lg,
   },
 });
+
