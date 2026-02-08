@@ -44,4 +44,4 @@ app-example
 
 
 # Firebase API Key
-/config/firebase.ts 
+config/firebase.ts 
